@@ -1,0 +1,152 @@
+= Concepts
+v1.0, 2017-10-02
+:toc:
+:imagesdir: ./_images
+
+
+== Overview
+
+Everything in IOT is based on data and communication. Devices collect data and communicate them as data points.
+The first step to gain from your data is to give your data more meaning by adding meta data.
+
+.Data points with value and unit
+image::data_definition.gif[500,500]
+
+These data points now have more value and if we manage to understand what they mean, we can gain profits from this value.
+In order to understand what our data means we have to put it in context.
+
+.Data in context of an industry robot
+image::data_in_context.gif[500,500]
+
+Now we have a frame of reference on how to interpret data. When we know, in which context the _150 mm/min_ stand, we can now grasp if this is within our desired parameters. We know where and how this velocity is measured an we are aware of the thresholds that should be kept in that place.
+
+
+
+Based on the connyun Data Model (Classes, Attributes, Associations, Objects, Links, etc.), we defined the core concepts. These are:
+
+* DeviceType
+* Device
+* GroupType
+* Group
+* Asset
+
+
+
+There is no precise definition of _Device_. Depending on the differences in viewpoints, a _Device_ could be a single sensor up to a complex system build from several components.
+It is even more difficult to precisely define "Device Type". Instead of trying a sharp definition, we will characterize the concepts by identifying the main requirements.
+
+
+=== Device Type
+
+Think of the Device Type as a structure or an arrangement of multiple data points and their metadata.
+
+A specific information model will be used by multiple similar devices. We define *Device Type* as the *abstraction that specifies the information model shared by a set of devices (instances)*.
+
+
+.Different robots share the same basic information model
+image::shared_devicetype.gif[500,500]
+
+If there is a need for a feature, which is not provided within the shared Device Type, a more specific Device Type can be created, based on the standard Device Type.
+
+Furthermore, device types are a central abstraction that serve two main purposes:
+
+. Provide a formal specification of the data and control structures (a.k.a. Interface) offered by a set of devices, to be used by IIoT applications, and
+. Help supporting device lifecycle tasks, like on-boarding and configuration, towards full plug&work support
+
+Device types are defined primarily by machine builders (for standardized machines / products), secondarily by system integrators, and only in exceptional cases by operators.
+
+As device types do not represent any concrete "real" machine, they only exists as digital objects, carrying following kind of information:
+
+Structural Information::
+It describes properties and measurements common to all devices belonging to the same device type:
+* Which properties do all instances of the given device type have?
+* Which measurements do the devices generate (time-series, events, log, etc.)
+
+Life-cycle Information::
+Contains information that helps managing the devices in the system (digital twin). For example:
+
+* How to recognize that a given *real* device belongs to a specific device type: E.g. OPC UA nodes for manufacturer and model + (partial) values
+* How to uniquely identify a concrete instance of the device type, in order to match it with the digital twin. E.g.: OPC UA nodes to consider (manufacturer + model + serial number), or DI-"urn"
+
+
+
+Configuration Information::
+Related to the configuration of the connectivity and the digital twin. For example:
+* Default View(s)
+* Default Stream-Connector Configuration
+Compatibility with Apps::
+Which applications running in the cloud platform are generally meant/tested/approved for given device type
+
+Relation to other device types::
+* Inheritance
+
+
+=== Device
+
+A device is in most cases a system, that can be connected (via on-boarding) to a cloud-based IoT Platform. This system delivers information about its state and/or its environment. The complexity of the system can vary from very simple (e.g. a temperature sensor in the production hall), up to a complete production cell or line. In most cases, a device will be a product of a machine manufacturer, like for example, a robot or a CNC machine. Devices could also be unique custom devices, constructed for specific applications, for example a conveyor system.
+
+In an ideal case, the communication protocol for exchanging data between the device, the edge component and the IoT platform, as well as the information model are standardized. This can be achieved by using OPC UA servers that implement a companion specification. Nevertheless, other communication protocols, for example MQTT, can be used as well.
+
+NOTE: While "Device" is used to refer to both the "real" machines, as well as their digital representation, the term _digital twin_ is specific to the last one.
+
+
+==== Data related to an Device
+
+
+For each device represented in our platform (the digital twin), we want to keep track of different kind of information.
+A first distinction can be made among:
+
+Master data::
+* describes static properties of the Device
+* E.g. manufacturer, date of purchase, current location, etc.
+Operational data::
+* time series (telemetry), events, alarms, log-files, etc.
+* E.g. axis positions, temperature, number of processed parts, etc.
+Meta data::
+* describes master data and operational data
+* E.g. units of measurements (kg, m/s, etc.), sensor range, datatypes, etc.
+Device life-cycle data::
+* data used during the life-cycle of the digital twin (E.g. on-boarding, update, decommissioning, etc.)
+* E.g. device identification, device connectivity, configuration, etc.
+
+This first distinction is extremely important because the amount of data and the change-ratio vary so strongly, that the requirements are different.
+
+Depending on how the actual data (values) get into the system, we distinguish among:
+
+Manually maintained data::
+* Usually for master data, when must be provided via UI
+* E.g. date of purchase, operators mail, machine location, etc.
+Automatically acquired data::
+* Definitely for operational data, but it also can apply to master data and meta data whenever this data is available from the device
+* E.g. motor temperature, machine location
+Business System-provided data::
+* Usually master data, that is made available via integration with business systems, like ERP
+
+NOTE: Note how some data can be in one or the other category, like for example "machine location". This will depend on the nature of the machine (stationary => manually, mobile => machine-provided) or just on the capabilities of the system (manually vs. business system integration).
+
+
+
+=== Group Type
+Similar to devices and device types, groups are “instances” of group types (the “class”). Group types define the set of attributes that concrete groups have.
+
+
+=== Group
+
+Groups can be used to define “typed” collections of devices. “Typed“ means, that a group (instance) is defined not only by its members, but it describes a common semantics for the contained objects, defined by specific group-type attributes and the associated values. Groups can build-up hierarchies, and can be used for finding/browsing devices, and for aggregating KPIs. In summary a group is a collection of devices and (sub-)groups, with properties defined by the group type.
+
+The most common usage of groups is with hierarchical groups that represent physical locations, like for example a city in a country, with multiple buildings.
+
+.Grouping by lines or machine types
+image::groups.gif[500,500]
+
+Groups can however be also used to bring devices together that logically belong to some group. For example: the set of all KUKA Robots, or the set of all machines involved in some manufacturing process, or the set of all machines being maintained by some specific service company.
+
+
+
+=== Asset
+
+
+The definition of an asset (a concept taken from the business vocabulary) depends on the focus set by the plant operator. In many cases, one asset will correspond with exactly one device. However, and depending on how the device type was defined, it could be that the granularity of devices does not match the expectations of the plant operator. For example, if the operator is primarily interested in the OEE of a production cell, which consists of individual machines onboarded as individual devices, then the asset could contain all the devices in the cell. Alternatively, the overall data for the cell can be provided by a specialized OPC UA server, onboarded as an independent device. In this case, the asset could contain only this single device, or also include all the devices for the individual machines.
+
+
+NOTE: Note that assets get the data only via its contained devices.
